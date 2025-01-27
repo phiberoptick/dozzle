@@ -1,0 +1,27 @@
+<!doctype html>
+<html class="bg-base-200 text-base-content">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dozzle</title>
+    <script type="application/json" id="config__json">
+      {{ marshal .Config }}
+    </script>
+    <link rel="icon" href="{{ .Base }}/favicon.png" type="image/png" />
+    {{- if .Dev}}
+    <script type="module" src="http://localhost:5173/@vite/client"></script>
+    <script type="module" src="http://localhost:5173/assets/main.ts"></script>
+    {{- else }} {{ $js := index .Manifest "assets/main.ts" "file" }} {{ $css := index .Manifest "assets/main.ts" "css"
+    }}
+    <link rel="stylesheet" href="{{ .Base }}/{{ index $css 0}}" />
+    <script type="module" src="{{ .Base }}/{{ $js }}"></script>
+    {{- end }}
+    <meta name="description" content="Dozzle is a log viewer for Docker" />
+    <meta name="robots" content="noindex" />
+    <link rel="apple-touch-icon" href="{{ .Base }}/apple-touch-icon.png" sizes="512x512" />
+  </head>
+
+  <body>
+    <div id="app"></div>
+  </body>
+</html>

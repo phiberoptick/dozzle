@@ -1,4 +1,5 @@
-
+certs
+/data
 dist
 node_modules
 .cache
@@ -6,6 +7,11 @@ static
 dozzle
 coverage
 .pnpm-debug.log
-.vscode
 coverage.out
 .netlify
+/test-results/
+/playwright-report/
+/playwright/.cache/
+*.pem
+*.csr
+tmp

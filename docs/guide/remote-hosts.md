@@ -4,13 +4,20 @@ title: Remote Host Setup
 
 # Remote Host Setup
 
-Dozzle supports connecting to multiple remote hosts via `tcp://` using TLS and non-secured connections. Dozzle will need to have appropriate certs mounted to use secured connection. `ssh://` is not supported because Dozzle docker image does not ship with any ssh clients.
+Dozzle supports connecting to remote Docker hosts. This is useful when running Dozzle in a container and you want to monitor a different Docker host.
 
-## Connecting to remote hosts
+However, with Dozzle agents, you can connect to remote hosts without exposing the Docker socket. See the [agent](/guide/agent) page for more information.
 
-Remote hosts can be configured with `--remote-host` or `DOZZLE_REMOTE_HOST`. All certs must be mounted to `/certs` directory. The `/cert` directory expects to have `/certs/{ca,cert,key}.pem` or `/certs/{host}/{ca,cert,key}.pem` in case of multiple hosts.
+> [!WARNING]
+> Remote hosts have been replaced with agents. Agents provide a more secure way to connect to remote hosts. Although remote hosts are still supported, it is recommended to use agents. See the [agent](/guide/agent) page for more information and examples. For comparison, see the [comparing agents with remote connections](/guide/agent#comparing-agents-with-remote-connection) section.
 
-Multiple `--remote-host` flags can be used to specify multiple hosts. However, using `DOZZLE_REMOTE_HOST` the value should be comma separated.
+## Connecting to Remote Hosts with TLS
+
+Remote hosts can be configured with `--remote-host` or `DOZZLE_REMOTE_HOST`. All certificates must be mounted to `/certs` directory. The `/certs` directory expects to have `/certs/{ca,cert,key}.pem` or `/certs/{host}/{ca,cert,key}.pem` in case of multiple hosts.
+
+Note the `{host}` value referred to here is the IP or FQDN configured and not the [optional label](#adding-labels-to-hosts).
+
+Multiple `--remote-host` flags can be used to specify multiple hosts. However, when using `DOZZLE_REMOTE_HOST`, the value should be comma-separated.
 
 ::: code-group
 
@@ -19,7 +26,6 @@ $ docker run -v /var/run/docker.sock:/var/run/docker.sock -v /path/to/certs:/cer
 ```
 
 ```yaml [docker-compose.yml]
-version: "3"
 services:
   dozzle:
     image: amir20/dozzle:latest
@@ -34,22 +40,54 @@ services:
 
 :::
 
-## Connecting with a socket proxy
+## Connecting with a Socket Proxy
 
-If you are in a private network then you can use [Docker Socket Proxy](https://github.com/Tecnativa/docker-socket-proxy) which expose `docker.sock` file without the need of TLS. Dozzle will never try to write to Docker but it will need access to list APIs. The following command will start a proxy with minimal access.
+If you are in a private network, then you can use [Docker Socket Proxy](https://github.com/Tecnativa/docker-socket-proxy) which exposes `docker.sock` file without the need for TLS. Dozzle will never try to write to Docker but it will need access to list APIs. The following command will start a proxy with minimal access:
 
 ```sh
-docker container run --privileged -e CONTAINERS=1 -v /var/run/docker.sock:/var/run/docker.sock -p 2375:2375 tecnativa/docker-socket-proxy
+docker container run --privileged -e CONTAINERS=1 -e INFO=1 -v /var/run/docker.sock:/var/run/docker.sock -p 2375:2375 tecnativa/docker-socket-proxy
 ```
 
-Note that `CONTAINERS=1` is required to list running containers. `EVENTS` is also needed but it is enabled by default.
+> [!TIP]
+> Using `CONTAINERS=1` is required to list running containers. `EVENTS` is also needed but it is enabled by default. `INFO=1` is needed to list system information.
 
-Running Dozzle without any certs should work. Here is an example:
+Running Dozzle without any certificates should work. Here is an example:
 
 ```sh
 docker run --volume=/var/run/docker.sock:/var/run/docker.sock -p 8080:8080 amir20/dozzle --remote-host tcp://123.1.1.1:2375
 ```
 
-::: warning
-Exposing `docker.sock` publicly is not safe. Only use a proxy for an internal network where all clients are trusted.
+> [!WARNING]
+> Docker Socket Proxy is not recommended for production use. It is only for private networks.
+
+## Adding Labels to Hosts
+
+`--remote-host` supports host labels by appending them to the connection string with `|`. For example, `--remote-host tcp://123.1.1.1:2375|foobar.com` will use foobar.com as the label in the UI. A full example using the CLI or compose:
+
+::: code-group
+
+```sh
+docker run --volume=/var/run/docker.sock:/var/run/docker.sock -p 8080:8080 amir20/dozzle --remote-host tcp://123.1.1.1:2375|foobar.com
+```
+
+```yaml [docker-compose.yml]
+services:
+  dozzle:
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /path/to/certs:/certs
+    ports:
+      - 8080:8080
+    environment:
+      DOZZLE_REMOTE_HOST: tcp://167.99.1.1:2376|foo.com,tcp://167.99.1.2:2376|bar.com
+```
+
 :::
+
+> [!WARNING]
+> Dozzle uses the Docker API to gather information about hosts. Each agent needs a unique host ID. They use Docker's system ID or node ID to identify the host. If you are using swarm, then the node ID is used. If you don't see all hosts, then you may have duplicate hosts configured that have the same host ID. To fix this, remove `/var/lib/docker/engine-id` file. See [FAQ](/guide/faq#i-am-seeing-duplicate-hosts-error-in-the-logs-how-do-i-fix-it) for more information.
+
+## Changing Localhost Label
+
+`localhost` is a special connection and uses different configuration than `--remote-host`. Changing the label for localhost can be done using the `--hostname` or `DOZZLE_HOSTNAME` env variable. See [hostname](/guide/hostname) page for examples on how to use this flag.

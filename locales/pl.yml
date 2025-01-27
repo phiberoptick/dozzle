@@ -1,0 +1,116 @@
+toolbar:
+  clear: Wyczyść
+  download: Pobierz
+  search: Szukaj
+  show: Pokaż tylko {std}
+  show-all: Pokaż wszystko
+  stop: Stop
+  start: Start
+  restart: Restart
+label:
+  service: Brak usług | 1 usługa | {count} usług
+  total-containers: Całkowita liczba kontenerów
+  running: Uruchomione
+  total-cpu-usage: Całkowite użycie CPU
+  total-mem-usage: Całkowite użycie pamięci
+  dozzle-version: Wersja Dozzle
+  containers: Kontenery
+  container: Brak kontenerów | 1 kontener | {count} kontenerów
+  running-containers: Działające kontenery
+  all-containers: Wszystkie kontenery
+  host: Host
+  hosts: Hosty
+  password: Hasło
+  username: Nazwa użytkownika
+  container-name: Nazwa kontenera
+  status: Status
+  created: Utworzony
+  avg-cpu: Średnie zużycie CPU (%)
+  avg-mem: Średnie zużycie pamięci (%)
+  pinned: Przypięte
+  per-page: Wierszy na strone
+  host-menu: Hosty i Kontenery
+  swarm-menu: Usługi i Stosy
+  group-menu: Grupy Niestandardowe
+tooltip:
+  search: Przeszukaj kontenery (⌘ + k, ⌃k)
+  pin-column: Przypnij jako kolumna
+error:
+  page-not-found: Ta strona nie istnieje
+  invalid-auth: Nazwa użytkownika lub hasło są niepoprawne
+  logs-skipped: Pominiętych wpisów {total}
+  container-not-found: Kontener nie został znaleziony
+  events-stream:
+    title: Niespodziewany błąd
+    message: >-
+      Dozzle nie był wstanie połączyć się z API. Sprawdź ustawienia sieciowe.
+      Jeżeli korzysasz z reverse proxy, upewnij się że jest poprawnie skonfigurowane.
+  events-timeout:
+    title: Coś jest nie tak
+    message: >-
+      Przekroczono limit czasu w trakcie połączenia do API. Sprawdź ustawienia sieciowe.
+alert:
+  redirected:
+    title: Przekierowywanie do nowego kontenera
+    message: Dozzle automatycznie przekierował do nowego kontenera {containerId}.
+  similar-container-found:
+    title: Podobny kontener został znaleziony
+    message: >-
+      Dozzle znalazł podobny kontener {containerId} który działa na tym samym
+      hoście i przekieruje Cię na niego automatycznie jeżeli nie klikniesz 'Anuluj'
+title:
+  page-not-found: Strona nie została znaleziona
+  login: Wymagane uwierzytelnienie
+  dashboard: 1 kontener | {count} kontenerów
+  settings: Ustawienia
+button:
+  logout: Wyloguj się
+  login: Zaloguj się
+  settings: Ustawienia
+placeholder:
+  search-containers: Przeszukaj kontery (⌘ + k, ⌃k)
+  search: Szukaj
+settings:
+  display: Wyświetlanie
+  locale: Nadpisz język
+  small-scrollbars: Użyj mniejszych suwaków
+  show-timesamps: Pokaż date i godzinę
+  soft-wrap: Zwijaj linie
+  datetime-format: Nadpisz format daty i godziny
+  font-size: Rozmiar czcionki używany dla logów
+  color-scheme: Motyw
+  options: Opcje
+  show-stopped-containers: Pokaż zatrzymane kontenery
+  about: Informacje
+  search: Włącz szukanie z dozzle
+  using-version: Używasz dozzle w wersji {version}.
+  update-available: >-
+    Nowa wersja jest dostępna! Zaktualizuj do <a href="{href}" target="_blank"
+    rel="noreferrer noopener">{nextVersion}</a>.
+  show-std: Pokaż etykiety dla stdout i stderr
+  automatic-redirect: Automatycznie przekieruj na kontener o tej samej nazwie
+  compact: Włącz tryb kompaktowy dla logów
+  log:
+    preview: To jest podgląd logów
+    warning: Log ostrzeżenia wygląda tak
+    complex: To jest złożony wpis dziennika w formacie json
+    simple: To jest bardzo długa wiadomość, która domyślnie zostanie zawinięta. Wyłączenie miękkiego zawijania wyłączy to. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    multi-line-error:
+      start-line: To jest wieloliniowy komunikat o błędzie
+      middle-line: z drugą linią
+      end-line: i wreszcie trzecią linią.
+releases:
+  features: jedna nowa funkcjonalność | {count} funkcjonalności
+  bugFixes: jeden naprawiony błąd | {count} poprawki
+  breaking: jedna duża zmiana | {count} dużych zmian
+  three_parts: "{first}, {second} i {third}"
+  two_parts: "{first} oraz {second}"
+  latest: Najnowsza
+  no_releases: Masz najnowszą wersję
+log_actions:
+  copy_log: Skopiuj logi
+  jump_to_context: Przeskocz do kontekstu
+toasts:
+  copied:
+    title: Skopiowany
+    message: Log skopiowany do schowka

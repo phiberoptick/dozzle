@@ -1,16 +1,25 @@
 // https://vitepress.dev/guide/custom-theme
 import { h } from "vue";
-import Theme from "vitepress/theme";
-import "uno.css";
+import DefaultTheme from "vitepress/theme";
+
+import "@fontsource-variable/playfair-display";
 import "./style.css";
 import HeroVideo from "./components/HeroVideo.vue";
+import BuyMeCoffee from "./components/BuyMeCoffee.vue";
+import Stats from "./components/Stats.vue";
+import Banner from "./components/Banner.vue";
 
 export default {
-  ...Theme,
+  ...DefaultTheme,
   Layout: () => {
-    return h(Theme.Layout, null, {
+    return h(DefaultTheme.Layout, null, {
       "home-hero-image": () => h(HeroVideo),
+      "sidebar-nav-after": () => h(BuyMeCoffee),
+      "home-hero-actions-after": () => h(Stats),
+      "layout-top": () => h(Banner),
     });
   },
-  enhanceApp({ app, router, siteData }) {},
+  enhanceApp(ctx) {
+    DefaultTheme.enhanceApp(ctx);
+  },
 };

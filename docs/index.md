@@ -6,17 +6,48 @@ title: Home
 
 hero:
   name: "Dozzle"
-  tagline: A lightweight, web-based Docker log viewer that provides real-time monitoring and easy troubleshooting.
+  tagline: Real-time logging and monitoring for Docker in the browser
   actions:
     - theme: brand
       text: Get Started
       link: /guide/getting-started
+    - theme: alt
+      text: View on GitHub
+      link: https://github.com/amir20/dozzle
 
 features:
-  - title: Real-time logging
-    details: Allows you to view logs of other Docker containers in real-time. As new log entries are generated, they are streamed to the web interface without needing to refresh the page.
-  - title: Lightweight
-    details: An application written in Go consuming very little memory and CPU. It can be run alongside other containers without causing performance issues.
+  - title: Self Hosted
+    details: Dozzle is a self-hosted application that runs in your own infrastructure, ensuring your logs remain private and secure.
+    icon: 🏠
+  - title: Real-time Logging & Monitoring
+    details: Captures real-time Docker container logs, enabling quick and efficient issue diagnosis.
+    icon: 🚀
+  - title: Docker Swarm Support
+    details: Supports Docker services, allowing you to monitor logs from multiple nodes in a single interface.
+    link: /guide/swarm-mode
+    linkText: Learn More
+    icon: 🐳
   - title: Multi-host Support
-    details: Dozzle UI support connecting to multiple remote hosts with a simple drop down to choose between different hosts.
+    details: UI support connecting to multiple remote hosts with a simple drop down to choose between different hosts.
+    link: /guide/remote-hosts
+    linkText: Learn More
+    icon: 🌐
+  - title: SQL Engine
+    details: Use SQL queries to analyze logs inside your browser with WebAssembly and DuckDB.
+    icon: 📊
+    linkText: Learn More
+    link: /guide/sql-engine
+  - title: Secured Agents
+    details: Connect to remote hosts securely with agents, providing a more secure way to connect to remote hosts.
+    icon: 🔒
+    link: /guide/agent
+    linkText: Learn More
+  - title: Easy to Use
+    details: Simple to set up and use, with a clean and intuitive interface that requires no additional configuration.
+    icon: 🎨
+  - title: Sponsored by Docker OSS
+    details: Dozzle is open source and free to use, with the source code available on GitHub.
+    icon: 📜
+    link: https://hub.docker.com/r/amir20/dozzle
+    linkText: Docker Hub
 ---

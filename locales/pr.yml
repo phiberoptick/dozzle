@@ -2,16 +2,30 @@ toolbar:
   clear: Limpar
   download: Descarregar
   search: Pesquisa
+  show: Mostrar apenas {std}
+  show-all: Mostrar todos os fluxos
 label:
   containers: Contentores
+  running-containers: Contentores em execução
+  all-containers: Todos os contentores
   total-containers: Contentores Totais
   running: Em execução
   total-cpu-usage: Utilização total da CPU
   total-mem-usage: Total de utilização da memória
   dozzle-version: Versão Dozzle
   all: Tudo
+  host: Anfitrião
+  hosts: Anfitriões
   password: Senha
   username: Nome de usuário
+  container-name: Nome do contentor
+  status: Estado
+  created: Criado
+  avg-cpu: Média de CPU (%)
+  avg-mem: Média de MEM (%)
+  host-menu: Anfitriões e Contentores
+  swarm-menu: Serviços e Stacks
+  group-menu: Grupos Personalizados
 tooltip:
   search: Pesquisar contentores (⌘ + K, CTRL + K)
   pin-column: Alfinete como coluna
@@ -19,17 +33,39 @@ error:
   page-not-found: Esta página não existe.
   invalid-auth: O nome de usuário e a senha não são válidos.
   logs-skipped: Saltado {total} entradas
+  container-not-found: Contentor não encontrado.
+  events-stream:
+    title: Erro inesperado
+    message: >-
+      Dozzle UI não conseguiu ligar à API. Por favor, verifique as suas definições de rede.
+      Se estiver a utilizar um proxy reverso, certifique-se de que está configurado correctamente.
+  events-timeout:
+    title: Algo não está bem
+    message: >-
+      Dozzle UI esgotou o tempo limite ao ligar à API. Por favor, verifique a ligação de rede e tente novamente.
+alert:
+  redirected:
+    title: Redirecionado para novo contentor
+    message: Dozzle redirecionou-o automaticamente para o novo contentor {containerId}.
+  similar-container-found:
+    title: Contentor semelhante encontrado
+    message: >-
+      Dozzle encontrou um contentor semelhante {containerId} que está a ser executado no mesmo anfitrião. Quer mudar para ele?
 title:
   page-not-found: Página não encontrada
   login: Autenticação Requerida
+  dashboard: 1 contentor | {count} contentores
   settings: Configurações
 button:
   logout: Terminar sessão
   login: Iniciar sessão
+  settings: Configurações
 placeholder:
   search-containers: Pesquisar contentores (⌘ + K, CTRL + K)
+  search: Pesquisa
 settings:
   display: Visão
+  locale: Localidade
   small-scrollbars: Usar barras de rolagem mais pequenas
   show-timesamps: Mostrar carimbos de tempo
   soft-wrap: Linhas de texto de embrulho suave
@@ -39,12 +75,37 @@ settings:
   font-size: Tamanho de letra a utilizar para os registos
   color-scheme: Esquema de cores
   options: Opções
+  datetime-format: Formato de data e hora
   show-stopped-containers: Mostrar contentores parados
   about: Acerca de
-  search: >-
-    Habilitar a pesquisa com Dozzle usando <code>comando+f</code> ou
-    <code>ctrl+f</code>
+  search: Habilitar a pesquisa com Dozzle usando
   using-version: Está a usar o Dozzle {version}.
   update-available: >-
     Está disponível uma nova versão! Actualização para
-    <a :href="{href}" class="next-release" target="_blank" rel="noreferrer noopener">{nextVersion}</a>.
+    <a href="{href}" target="_blank" rel="noreferrer noopener">{nextVersion}</a>.
+  show-std: Mostrar etiquetas de saída padrão e saída de erro padrão
+  automatic-redirect: Redirecionar automaticamente para novos contentores com o mesmo nome
+  compact: Compactar a interface do utilizador
+  releases:
+    features: uma nova funcionalidade | {count} funcionalidades
+    bugFixes: uma correção de bug | {count} correções
+    breaking: uma mudança significativa | {count} mudanças significativas
+    three_parts: "{first}, {second} e {third}"
+    two_parts: "{first} com {second}"
+    latest: Mais recente
+    no_releases: Você tem a versão mais recente
+
+  log_actions:
+    copy_log: Copiar log
+    jump_to_context: Ir para contexto
+
+  settings:
+    log:
+      preview: Esta é uma prévia dos logs
+      warning: Um log de aviso se parece com isto
+      complex: Esta é uma entrada de log complexa em json
+      simple: Esta é uma mensagem muito longa que seria quebrada por padrão. Desativar quebras suaves desativaria isso. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+      multi-line-error:
+        start-line: Esta é uma mensagem de erro multi-linha
+        middle-line: com uma segunda linha
+        end-line: e finalmente uma terceira linha.

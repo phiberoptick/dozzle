@@ -1,0 +1,20 @@
+name: 🚀 Feature Request
+labels: ["enhancement"]
+description: |
+  Use this template if you have a feature request or an idea for a new feature.
+body:
+  - type: textarea
+    attributes:
+      label: Describe the feature you would like to see
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Describe how you would like to see this feature implemented
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Describe any alternatives you've considered
+    validations:
+      required: false

@@ -1,4 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base", ":automergeMinor"]
+  "extends": ["config:recommended", "schedule:weekly", "group:allNonMajor", ":automergeMinor"],
+  "rangeStrategy": "bump",
+  "ignoreDeps": []
 }

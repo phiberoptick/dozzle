@@ -1,13 +1,8 @@
 import { createRequire } from "module";
 import { defineConfig } from "vitepress";
-import { createWriteStream } from "node:fs";
-import { resolve } from "node:path";
-import { SitemapStream, streamToPromise } from "sitemap";
 
 const require = createRequire(import.meta.url);
 const pkg = require("dozzle/package.json");
-
-const links = [] as { url: string; lastmod?: number }[];
 
 export default defineConfig({
   lang: "en-US",
@@ -32,6 +27,10 @@ export default defineConfig({
     ],
   ],
   themeConfig: {
+    logo: "/logo.svg",
+    search: {
+      provider: "local",
+    },
     editLink: {
       pattern: "https://github.com/amir20/dozzle/edit/master/docs/:path",
     },
@@ -64,10 +63,20 @@ export default defineConfig({
         text: "Advanced Configuration",
         items: [
           { text: "Authentication", link: "/guide/authentication" },
+          { text: "Actions", link: "/guide/actions" },
+          { text: "Agent Mode", link: "/guide/agent" },
+          { text: "Changing Base", link: "/guide/changing-base" },
+          { text: "Container Names", link: "/guide/container-names" },
+          { text: "Container Groups", link: "/guide/container-groups" },
+          { text: "Data Analytics", link: "/guide/analytics" },
+          { text: "Display Name", link: "/guide/hostname" },
+          { text: "Filters", link: "/guide/filters" },
           { text: "Healthcheck", link: "/guide/healthcheck" },
           { text: "Remote Hosts", link: "/guide/remote-hosts" },
+          { text: "Swarm Mode", link: "/guide/swarm-mode" },
           { text: "Supported Env Vars", link: "/guide/supported-env-vars" },
-          { text: "Analytics", link: "/guide/analytics" },
+          { text: "Logging Files on Disk", link: "/guide/log-files-on-disk" },
+          { text: "SQL Engine", link: "/guide/sql-engine" },
         ],
       },
       {
@@ -75,6 +84,13 @@ export default defineConfig({
         items: [
           { text: "FAQ", link: "/guide/faq" },
           { text: "Debugging", link: "/guide/debugging" },
+        ],
+      },
+      {
+        text: "About",
+        items: [
+          { text: "Team", link: "/team" },
+          { text: "Support", link: "/support" },
         ],
       },
     ],
@@ -95,24 +111,7 @@ export default defineConfig({
     ],
   },
 
-  transformHtml: (_, id, { pageData }) => {
-    if (!/[\\/]404\.html$/.test(id))
-      links.push({
-        // you might need to change this if not using clean urls mode
-        url: pageData.relativePath.replace(/((^|\/)index)?\.md$/, "$2"),
-        lastmod: pageData.lastUpdated,
-      });
-  },
-
-  buildEnd: async ({ outDir }) => {
-    const sitemap = new SitemapStream({
-      hostname: "https://dozzle.dev/",
-    });
-    const writeStream = createWriteStream(resolve(outDir, "sitemap.xml"));
-    sitemap.pipe(writeStream);
-    links.forEach((link) => sitemap.write(link));
-    const promise = streamToPromise(sitemap);
-    sitemap.end();
-    await promise;
+  sitemap: {
+    hostname: "https://dozzle.dev/",
   },
 });

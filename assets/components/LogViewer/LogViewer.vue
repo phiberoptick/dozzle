@@ -1,108 +1,42 @@
 <template>
-  <ul class="events" ref="events" :class="{ 'disable-wrap': !softWrap, [size]: true }">
-    <li
-      v-for="(item, index) in filtered"
-      :key="item.id"
-      :data-key="item.id"
-      :class="{ selected: toRaw(item) === toRaw(lastSelectedItem) }"
-    >
-      <div class="line-options" v-show="isSearching()">
-        <dropdown-menu :class="{ 'is-last': index === filtered.length - 1 }" class="is-top minimal">
-          <a class="dropdown-item" @click="handleJumpLineSelected($event, item)" :href="`#${item.id}`">
-            <div class="level is-justify-content-start">
-              <div class="level-left">
-                <div class="level-item">
-                  <cil:find-in-page class="mr-4" />
-                </div>
-              </div>
-              <div class="level-right">
-                <div class="level-item">Jump to Context</div>
-              </div>
-            </div>
-          </a>
-        </dropdown-menu>
-      </div>
-      <component :is="item.getComponent()" :log-entry="item" :visible-keys="visibleKeys.value"></component>
-    </li>
-  </ul>
+  <LogList :messages="visibleMessages" />
 </template>
 
 <script lang="ts" setup>
-import { type ComputedRef, toRaw } from "vue";
-import { useRouteHash } from "@vueuse/router";
-import { Container } from "@/models/Container";
 import { type JSONObject, LogEntry } from "@/models/LogEntry";
 
 const props = defineProps<{
   messages: LogEntry<string | JSONObject>[];
+  visibleKeys: Map<string[], boolean>;
 }>();
 
-let visibleKeys = persistentVisibleKeys(inject("container") as ComputedRef<Container>);
+const { messages, visibleKeys } = toRefs(props);
 
 const { filteredPayload } = useVisibleFilter(visibleKeys);
-const { filteredMessages, resetSearch, isSearching } = useSearchFilter();
+const { debouncedSearchFilter } = useSearchFilter();
+const { streamConfig } = useLoggingContext();
 
-const { messages } = toRefs(props);
-const visible = filteredPayload(messages);
-const filtered = filteredMessages(visible);
+const visibleMessages = filteredPayload(messages);
+const router = useRouter();
 
-const events = ref<HTMLElement>();
-let lastSelectedItem: LogEntry<string | JSONObject> | undefined = $ref(undefined);
+watchEffect(() => {
+  const query = {} as Record<string, string>;
+  if (debouncedSearchFilter.value !== "") {
+    query.search = debouncedSearchFilter.value;
+  }
 
-function handleJumpLineSelected(e: Event, item: LogEntry<string | JSONObject>) {
-  lastSelectedItem = item;
-  resetSearch();
-}
+  if (!streamConfig.value.stderr) {
+    query.stderr = streamConfig.value.stderr.toString();
+  }
 
-const routeHash = useRouteHash();
-watch(
-  routeHash,
-  (hash) => {
-    document.querySelector(`[data-key="${hash.substring(1)}"]`)?.scrollIntoView({ block: "center" });
-  },
-  { immediate: true, flush: "post" }
-);
+  if (!streamConfig.value.stdout) {
+    query.stdout = streamConfig.value.stdout.toString();
+  }
+
+  router.push({
+    query,
+    replace: true,
+  });
+});
 </script>
-<style scoped lang="scss">
-.events {
-  padding: 1em 0;
-  font-family: SFMono-Regular, Consolas, Liberation Mono, monaco, Menlo, monospace;
-
-  & > li {
-    display: flex;
-    word-wrap: break-word;
-    padding: 0.2em 1em;
-
-    &:last-child {
-      scroll-snap-align: end;
-      scroll-margin-block-end: 5rem;
-    }
-
-    &:nth-child(odd) {
-      background-color: rgba(125, 125, 125, 0.08);
-    }
-
-    &.selected {
-      border: 1px var(--secondary-color) solid;
-    }
-
-    & > .line-options {
-      display: flex;
-      flex-direction: row-reverse;
-      margin-right: 1em;
-    }
-  }
-
-  &.small {
-    font-size: 60%;
-  }
-
-  &.medium {
-    font-size: 80%;
-  }
-
-  &.large {
-    font-size: 120%;
-  }
-}
-</style>
+<style scoped></style>

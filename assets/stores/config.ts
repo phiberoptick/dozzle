@@ -1,38 +1,41 @@
+import { type Settings } from "@/stores/settings";
+import { Host } from "@/stores/hosts";
+
 const text = document.querySelector("script#config__json")?.textContent || "{}";
 
-interface Config {
+export interface Config {
   version: string;
   base: string;
-  authorizationNeeded: boolean | "false" | "true";
-  secured: boolean | "false" | "true";
   maxLogs: number;
   hostname: string;
-  hosts: string[] | string;
+  hosts: Host[];
+  authProvider: "simple" | "none" | "forward-proxy";
+  enableActions: boolean;
+  user?: {
+    username: string;
+    email: string;
+    name: string;
+  };
+  profile?: Profile;
+}
+
+export interface Profile {
+  settings?: Settings;
+  pinned?: Set<string>;
+  visibleKeys?: Map<string, Map<string[], boolean>>;
+  releaseSeen?: string;
+  collapsedGroups?: Set<string>;
 }
 
 const pageConfig = JSON.parse(text);
 
 const config: Config = {
-  maxLogs: 600,
+  maxLogs: 400,
+  version: "v0.0.0",
+  hosts: [],
   ...pageConfig,
 };
 
-if (config.version == "{{ .Version }}") {
-  config.version = "master";
-  config.base = "";
-  config.authorizationNeeded = false;
-  config.secured = false;
-  config.hostname = "localhost";
-  config.hosts = ["localhost"];
-} else {
-  config.version = config.version.replace(/^v/, "");
-  config.authorizationNeeded = config.authorizationNeeded === "true";
-  config.secured = config.secured === "true";
-  config.hosts = (config.hosts as string).split(",");
-}
+export default Object.freeze(config);
 
-export default config as Omit<Config, "hosts" | "authorizationNeeded" | "secured"> & {
-  hosts: string[];
-  authorizationNeeded: boolean;
-  secured: boolean;
-};
+export const withBase = (path: string) => `${config.base}${path}`;

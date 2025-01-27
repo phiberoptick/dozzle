@@ -1,17 +1,33 @@
 toolbar:
   clear: Очистить
+  show-hostname: Показать имя хоста
+  show-container-name: Показать имя контейнера
   download: Скачать
   search: Поиск
+  show: Показать только {std}
+  show-all: Показать все потоки
 label:
   containers: Контейнеры
+  running-containers: Запущенные контейнеры
+  all-containers: Все контейнеры
   total-containers: Всего Контейнеров
   running: Запущенные
   total-cpu-usage: Использование процессора
   total-mem-usage: Использование памяти
   dozzle-version: Версия Dozzle
   all: Все
+  host: Хост
+  hosts: Хосты
   password: Пароль
   username: Имя пользователя
+  container-name: Имя контейнера
+  status: Статус
+  created: Создан
+  avg-cpu: средний процессор (%)
+  avg-mem: средняя память (%)
+  host-menu: Хосты и Контейнеры
+  swarm-menu: Сервисы и Стеки
+  group-menu: Пользовательские Группы
 tooltip:
   search: Поиск контейнеров (⌘ + k, ⌃k)
   pin-column: Закрепить столбец
@@ -19,17 +35,39 @@ error:
   page-not-found: Эта страница не доступна.
   invalid-auth: Имя пользователя или пароль неверны.
   logs-skipped: Пропущено {total} записей
+  container-not-found: Контейнер не найден.
+  events-stream:
+    title: Неожиданная ошибка
+    message: >-
+      Dozzle UI не смог подключиться к API. Пожалуйста, проверьте настройки сети.
+      Если вы используете обратный прокси, убедитесь, что он настроен правильно.
+  events-timeout:
+    title: Что-то не так
+    message: >-
+      Dozzle UI превысил время ожидания при подключении к API. Пожалуйста, проверьте сетевое подключение и повторите попытку.
+alert:
+  redirected:
+    title: Перенаправлен на новый контейнер
+    message: Dozzle автоматически перенаправил вас на новый контейнер {containerId}.
+  similar-container-found:
+    title: Найден похожий контейнер
+    message: >-
+      Dozzle нашел похожий контейнер {containerId}, который работает на том же хосте. Хотите переключиться на него?
 title:
   page-not-found: Страница не найдена
   login: Требуется авторизация
+  dashboard: 1 контейнер | {count} контейнеров
   settings: Настройки
 button:
   logout: Выйти
   login: Войти
+  settings: Настройки
 placeholder:
   search-containers: Поиск контейнеров (⌘ + k, ⌃k)
+  search: Поиск
 settings:
   display: Вид
+  locale: Язык
   small-scrollbars: Уменьшенная полоса прокрутки
   show-timesamps: Показывать временные метки
   soft-wrap: Плавный перенос текста
@@ -39,11 +77,21 @@ settings:
   color-scheme: Цветовая схема
   options: Опции
   show-stopped-containers: Показывать остановленные контейнеры
+  datetime-format: Формат даты и времени
   about: Информация
-  search: >-
-    Включить поиск с помощью Dozzle, используя <code>command+f</code> или
-    <code>ctrl+f</code>
+  search: Включить поиск с помощью Dozzle, используя
   using-version: Вы используете версию Dozzle {version}.
   update-available: >-
-    Доступна новая версия! Обновить до <a :href="{href}" class="next-release"
-    target="_blank" rel="noreferrer noopener">{nextVersion}</a>.
+    Доступна новая версия! Обновить до <a href="{href}" target="_blank" rel="noreferrer noopener">{nextVersion}</a>.
+  show-std: Показывать метки stdout и stderr
+  automatic-redirect: Автоматическое перенаправление на новые контейнеры с тем же именем.
+  compact: Компактный режим
+  log:
+    preview: Это предварительный просмотр логов
+    warning: Так выглядит лог предупреждения
+    complex: Это сложная запись лога в формате json
+    simple: Это очень длинное сообщение, которое по умолчанию переносится. Отключение мягкого переноса отключит это. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    multi-line-error:
+      start-line: Это многострочное сообщение об ошибке
+      middle-line: со второй строкой
+      end-line: и наконец третьей строкой.
