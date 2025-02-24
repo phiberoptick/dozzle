@@ -1,81 +1,96 @@
 <template>
-  <main v-if="!authorizationNeeded">
-    <mobile-menu v-if="isMobile" @search="showFuzzySearch"></mobile-menu>
-    <splitpanes @resized="onResized($event)">
-      <pane min-size="10" :size="menuWidth" v-if="!isMobile && !collapseNav">
-        <side-menu @search="showFuzzySearch"></side-menu>
-      </pane>
-      <pane min-size="10">
-        <splitpanes>
-          <pane class="has-min-height router-view">
+  <div>
+    <mobile-menu v-if="isMobile && !forceMenuHidden" @search="showFuzzySearch"></mobile-menu>
+    <Splitpanes @resized="onResized($event)">
+      <Pane min-size="10" :size="menuWidth" v-if="!isMobile && !collapseNav && !forceMenuHidden">
+        <SidePanel @search="showFuzzySearch" />
+      </Pane>
+      <Pane min-size="10">
+        <Splitpanes>
+          <Pane class="router-view min-h-screen">
             <router-view></router-view>
-          </pane>
+          </Pane>
           <template v-if="!isMobile">
-            <pane v-for="other in activeContainers" :key="other.id">
-              <log-container
+            <Pane v-for="other in pinnedLogs" :key="other.id">
+              <ContainerLog
                 :id="other.id"
                 show-title
                 scrollable
                 closable
-                @close="containerStore.removeActiveContainer(other)"
-              ></log-container>
-            </pane>
+                @close="pinnedLogsStore.unPinContainer(other)"
+              />
+            </Pane>
           </template>
-        </splitpanes>
-      </pane>
-    </splitpanes>
-    <button
-      @click="collapse"
-      class="button is-small is-rounded"
-      :class="{ collapsed: collapseNav }"
-      id="hide-nav"
-      v-if="!isMobile"
+        </Splitpanes>
+      </Pane>
+    </Splitpanes>
+    <label
+      class="btn btn-circle swap bg-base-100 swap-rotate fixed bottom-4 -left-12 w-16 transition-all hover:-left-4"
+      :class="{ '-left-6!': collapseNav }"
+      v-if="!isMobile && !forceMenuHidden"
     >
-      <span class="icon ml-2" v-if="collapseNav">
-        <mdi:light-chevron-right />
-      </span>
-      <span class="icon" v-else>
-        <mdi:light-chevron-left />
-      </span>
-    </button>
-  </main>
+      <input type="checkbox" v-model="collapseNav" />
+      <mdi:chevron-right class="swap-on" />
+      <mdi:chevron-left class="swap-off" />
+    </label>
+  </div>
+  <dialog
+    ref="modal"
+    class="modal items-start bg-white/20 transition-none backdrop:backdrop-blur-xs"
+    @close="open = false"
+  >
+    <div class="modal-box max-w-2xl bg-transparent pt-20 shadow-none">
+      <FuzzySearchModal @close="open = false" v-if="open" />
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+  <SideDrawer ref="drawer" :width="drawerWidth">
+    <Suspense :timeout="0">
+      <component :is="drawerComponent" v-bind="drawerProperties" />
+      <template #fallback> Loading dependencies... </template>
+    </Suspense>
+  </SideDrawer>
+  <ToastModal />
 </template>
 
 <script lang="ts" setup>
 // @ts-ignore - splitpanes types are not available
 import { Splitpanes, Pane } from "splitpanes";
-import { useProgrammatic } from "@oruga-ui/oruga-next";
-import FuzzySearchModal from "@/components/FuzzySearchModal.vue";
+import { collapseNav } from "@/stores/settings";
+import SideDrawer from "@/components/common/SideDrawer.vue";
 
-const { oruga } = useProgrammatic();
-const { authorizationNeeded } = config;
+const pinnedLogsStore = usePinnedLogsStore();
+const { pinnedLogs } = storeToRefs(pinnedLogsStore);
 
-const containerStore = useContainerStore();
-const { activeContainers, visibleContainers } = storeToRefs(containerStore);
+const drawer = useTemplateRef<InstanceType<typeof SideDrawer>>("drawer") as Ref<InstanceType<typeof SideDrawer>>;
+const { component: drawerComponent, properties: drawerProperties, width: drawerWidth } = createDrawer(drawer);
 
-watchEffect(() => {
-  setTitle(`${visibleContainers.value.length} containers`);
+const modal = ref<HTMLDialogElement>();
+const open = ref(false);
+const searchParams = new URLSearchParams(window.location.search);
+const forceMenuHidden = ref(searchParams.has("hideMenu"));
+
+watch(open, () => {
+  if (open.value) {
+    modal.value?.showModal();
+  } else {
+    modal.value?.close();
+  }
 });
 
 onKeyStroke("k", (e) => {
-  if (e.ctrlKey || e.metaKey) {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
     showFuzzySearch();
     e.preventDefault();
   }
 });
 
 function showFuzzySearch() {
-  oruga.modal.open({
-    // parent: this,
-    component: FuzzySearchModal,
-    animation: "false",
-    width: 600,
-    active: true,
-  });
+  open.value = true;
 }
-function collapse() {
-  collapseNav.value = !collapseNav.value;
-}
+
 function onResized(e: any) {
   if (e.length == 2) {
     menuWidth.value = e[0].size;
@@ -83,45 +98,16 @@ function onResized(e: any) {
 }
 </script>
 
-<style scoped lang="scss">
-:deep(.splitpanes--vertical > .splitpanes__splitter) {
-  min-width: 3px;
-  background: var(--border-color);
+<style scoped>
+@import "@/main.css" reference;
 
-  &:hover {
-    background: var(--border-hover-color);
-  }
+:deep(.splitpanes--vertical > .splitpanes__splitter) {
+  @apply bg-base-100 hover:bg-secondary min-w-[3px];
 }
 
 @media screen and (max-width: 768px) {
   .router-view {
     padding-top: 75px;
-  }
-}
-
-.button.has-no-border {
-  border-color: transparent !important;
-}
-
-.has-min-height {
-  min-height: 100vh;
-}
-
-#hide-nav {
-  position: fixed;
-  left: 10px;
-  bottom: 10px;
-
-  &.collapsed {
-    left: -40px;
-    width: 60px;
-    padding-left: 40px;
-    color: var(--text-strong-color);
-    background: var(--scheme-main);
-
-    &:hover {
-      left: -25px;
-    }
   }
 }
 </style>

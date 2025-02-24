@@ -1,203 +1,222 @@
 <template>
-  <div>
-    <section class="section">
+  <PageWithLinks>
+    <section>
       <div class="has-underline">
-        <h2 class="title is-4">{{ $t("settings.about") }}</h2>
+        <h2>{{ $t("settings.about") }}</h2>
       </div>
 
       <div>
-        <span v-html="$t('settings.using-version', { version: currentVersion })"></span>
+        <span v-html="$t('settings.using-version', { version: config.version })"></span>
         <div
-          v-if="hasUpdate"
-          v-html="$t('settings.update-available', { nextVersion: nextRelease.name, href: nextRelease.html_url })"
+          v-if="hasRelease"
+          v-html="$t('settings.update-available', { nextVersion: latestRelease?.name, href: latestRelease?.htmlUrl })"
         ></div>
       </div>
     </section>
 
-    <section class="section">
+    <section class="@container flex flex-col">
       <div class="has-underline">
-        <h2 class="title is-4">{{ $t("settings.display") }}</h2>
+        <h2>{{ $t("settings.display") }}</h2>
       </div>
 
-      <div class="item">
-        <o-switch v-model="smallerScrollbars"> {{ $t("settings.small-scrollbars") }} </o-switch>
-      </div>
-      <div class="item">
-        <o-switch v-model="showTimestamp"> {{ $t("settings.show-timesamps") }} </o-switch>
-      </div>
+      <section class="grid-cols-2 gap-4 @3xl:grid">
+        <div class="flex flex-col gap-4 text-balance @3xl:pr-8">
+          <Toggle v-model="compact"> {{ $t("settings.compact") }} </Toggle>
 
-      <div class="item">
-        <o-switch v-model="softWrap"> {{ $t("settings.soft-wrap") }}</o-switch>
-      </div>
+          <Toggle v-model="smallerScrollbars"> {{ $t("settings.small-scrollbars") }} </Toggle>
 
-      <div class="item">
-        <div class="columns is-vcentered">
-          <div class="column is-narrow">
-            <o-field>
-              <o-dropdown v-model="hourStyle" aria-role="list">
-                <template #trigger>
-                  <o-button variant="primary" type="button">
-                    <span class="is-capitalized">{{ hourStyle }}</span>
-                    <span class="icon">
-                      <carbon:caret-down />
-                    </span>
-                  </o-button>
-                </template>
+          <Toggle v-model="showTimestamp">{{ $t("settings.show-timesamps") }}</Toggle>
 
-                <o-dropdown-item :value="value" aria-role="listitem" v-for="value in ['auto', '12', '24']" :key="value">
-                  <span class="is-capitalized">{{ value }}</span>
-                </o-dropdown-item>
-              </o-dropdown>
-            </o-field>
-          </div>
-          <div class="column">
-            {{ $t("settings.12-24-format") }}
-          </div>
+          <Toggle v-model="showStd">{{ $t("settings.show-std") }}</Toggle>
+
+          <Toggle v-model="softWrap">{{ $t("settings.soft-wrap") }}</Toggle>
+
+          <LabeledInput>
+            <template #label>
+              {{ $t("settings.locale") }}
+            </template>
+            <template #input>
+              <DropdownMenu
+                v-model="locale"
+                :options="[
+                  { label: 'Auto', value: '' },
+                  ...availableLocales.map((l) => ({ label: l.toLocaleUpperCase(), value: l })),
+                ]"
+              />
+            </template>
+          </LabeledInput>
+
+          <LabeledInput>
+            <template #label>
+              {{ $t("settings.datetime-format") }}
+            </template>
+            <template #input>
+              <div class="flex gap-4">
+                <DropdownMenu
+                  v-model="dateLocale"
+                  :options="[
+                    { label: 'Auto', value: 'auto' },
+                    { label: 'MM/DD/YYYY', value: 'en-US' },
+                    { label: 'DD/MM/YYYY', value: 'en-GB' },
+                    { label: 'DD.MM.YYYY', value: 'de-DE' },
+                    { label: 'YYYY-MM-DD', value: 'en-CA' },
+                  ]"
+                />
+                <DropdownMenu
+                  v-model="hourStyle"
+                  :options="[
+                    { label: 'Auto', value: 'auto' },
+                    { label: '12', value: '12' },
+                    { label: '24', value: '24' },
+                  ]"
+                />
+              </div>
+            </template>
+          </LabeledInput>
+
+          <LabeledInput>
+            <template #label>
+              {{ $t("settings.font-size") }}
+            </template>
+            <template #input>
+              <DropdownMenu
+                v-model="size"
+                :options="[
+                  { label: 'Small', value: 'small' },
+                  { label: 'Medium', value: 'medium' },
+                  { label: 'Large', value: 'large' },
+                ]"
+              />
+            </template>
+          </LabeledInput>
+
+          <LabeledInput>
+            <template #label>
+              {{ $t("settings.color-scheme") }}
+            </template>
+            <template #input>
+              <DropdownMenu
+                v-model="lightTheme"
+                :options="[
+                  { label: 'Auto', value: 'auto' },
+                  { label: 'Dark', value: 'dark' },
+                  { label: 'Light', value: 'light' },
+                ]"
+              />
+            </template>
+          </LabeledInput>
         </div>
-      </div>
-      <div class="item">
-        <div class="columns is-vcentered">
-          <div class="column is-narrow">
-            <o-field>
-              <o-dropdown v-model="size" aria-role="list">
-                <template #trigger>
-                  <o-button variant="primary" type="button">
-                    <span class="is-capitalized">{{ size }}</span>
-                    <span class="icon">
-                      <carbon:caret-down />
-                    </span>
-                  </o-button>
-                </template>
-
-                <o-dropdown-item
-                  :value="value"
-                  aria-role="listitem"
-                  v-for="value in ['small', 'medium', 'large']"
-                  :key="value"
-                >
-                  <span class="is-capitalized">{{ value }}</span>
-                </o-dropdown-item>
-              </o-dropdown>
-            </o-field>
-          </div>
-          <div class="column">{{ $t("settings.font-size") }}</div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="columns is-vcentered">
-          <div class="column is-narrow">
-            <o-field>
-              <o-dropdown v-model="lightTheme" aria-role="list">
-                <template #trigger>
-                  <o-button variant="primary" type="button">
-                    <span class="is-capitalized">{{ lightTheme }}</span>
-                    <span class="icon">
-                      <carbon:caret-down />
-                    </span>
-                  </o-button>
-                </template>
-
-                <o-dropdown-item
-                  :value="value"
-                  aria-role="listitem"
-                  v-for="value in ['auto', 'dark', 'light']"
-                  :key="value"
-                >
-                  <span class="is-capitalized">{{ value }}</span>
-                </o-dropdown-item>
-              </o-dropdown>
-            </o-field>
-          </div>
-          <div class="column">{{ $t("settings.color-scheme") }}</div>
-        </div>
-      </div>
+        <LogList
+          :messages="fakeMessages"
+          :last-selected-item="undefined"
+          :show-container-name="false"
+          class="border-base-content/50 hidden overflow-hidden rounded-lg border shadow-sm @3xl:block"
+        />
+      </section>
     </section>
-    <section class="section">
+
+    <section class="flex flex-col gap-4">
       <div class="has-underline">
-        <h2 class="title is-4">{{ $t("settings.options") }}</h2>
+        <h2>{{ $t("settings.options") }}</h2>
       </div>
+      <Toggle v-model="search">
+        {{ $t("settings.search") }} <key-shortcut char="f" class="align-top"></key-shortcut>
+      </Toggle>
 
-      <div class="item">
-        <o-switch v-model="search">
-          <span v-html="$t('settings.search')"></span>
-        </o-switch>
-      </div>
+      <Toggle v-model="showAllContainers">{{ $t("settings.show-stopped-containers") }}</Toggle>
 
-      <div class="item">
-        <o-switch v-model="showAllContainers"> {{ $t("settings.show-stopped-containers") }} </o-switch>
-      </div>
+      <Toggle v-model="automaticRedirect">{{ $t("settings.automatic-redirect") }}</Toggle>
     </section>
-  </div>
+  </PageWithLinks>
 </template>
 
 <script lang="ts" setup>
+import { ComplexLogEntry, SimpleLogEntry } from "@/models/LogEntry";
+
 import {
-  search,
-  lightTheme,
-  smallerScrollbars,
-  showTimestamp,
+  automaticRedirect,
+  compact,
   hourStyle,
+  dateLocale,
+  lightTheme,
+  search,
   showAllContainers,
+  showStd,
+  showTimestamp,
   size,
+  smallerScrollbars,
   softWrap,
-} from "@/composables/settings";
+  locale,
+} from "@/stores/settings";
+
+import { availableLocales, i18n } from "@/modules/i18n";
 
 const { t } = useI18n();
 
 setTitle(t("title.settings"));
+const { latestRelease, hasRelease } = useAnnouncements();
 
-const currentVersion = config.version;
-let nextRelease = $ref({ html_url: "", name: "" });
-let hasUpdate = $ref(false);
+const now = new Date();
+const hoursAgo = (hours: number) => {
+  const date = new Date(now);
+  date.setHours(date.getHours() - hours);
+  return date;
+};
 
-async function fetchNextRelease() {
-  if (!["dev", "master"].includes(currentVersion)) {
-    const response = await fetch("https://api.github.com/repos/amir20/dozzle/releases/latest");
-    if (response.ok) {
-      const release = await response.json();
-      hasUpdate = release.tag_name.slice(1).localeCompare(currentVersion, undefined, { numeric: true, sensitivity: 'base' }) > 0;
-      nextRelease = release;
-    }
-  } else {
-    hasUpdate = true;
-    nextRelease = {
-      html_url: "",
-      name: "master",
-    };
-  }
-}
-
-fetchNextRelease();
+const fakeMessages = computedWithControl(
+  () => i18n.global.locale.value,
+  () => [
+    new SimpleLogEntry(t("settings.log.preview"), "123", 1, hoursAgo(16), "info", undefined, "stdout"),
+    new SimpleLogEntry(t("settings.log.warning"), "123", 2, hoursAgo(12), "warn", undefined, "stdout"),
+    new SimpleLogEntry(
+      t("settings.log.multi-line-error.start-line"),
+      "123",
+      3,
+      hoursAgo(7),
+      "error",
+      "start",
+      "stderr",
+    ),
+    new SimpleLogEntry(
+      t("settings.log.multi-line-error.middle-line"),
+      "123",
+      4,
+      hoursAgo(2),
+      "error",
+      "middle",
+      "stderr",
+    ),
+    new SimpleLogEntry(t("settings.log.multi-line-error.end-line"), "123", 5, new Date(), "error", "end", "stderr"),
+    new ComplexLogEntry(
+      {
+        message: t("settings.log.complex"),
+        context: {
+          key: "value",
+          key2: "value2",
+        },
+      },
+      "123",
+      6,
+      new Date(),
+      "info",
+      "stdout",
+    ),
+    new SimpleLogEntry(t("settings.log.simple"), "123", 7, new Date(), "debug", undefined, "stderr"),
+  ],
+);
 </script>
-<style lang="scss" scoped>
-.title {
-  color: var(--title-color);
-}
-
-a.next-release {
-  text-decoration: underline;
-
-  &:hover {
-    text-decoration: none;
-  }
-}
-
-.section {
-  padding: 1rem 1.5rem;
-}
+<style scoped>
+@import "@/main.css" reference;
 
 .has-underline {
-  border-bottom: 1px solid var(--border-color);
-  padding: 1em 0px;
-  margin-bottom: 1em;
+  @apply border-base-content/50 mb-4 border-b py-4;
+
+  h2 {
+    @apply text-2xl;
+  }
 }
 
-.item {
-  padding: 1em 0;
-}
-
-code {
-  border-radius: 4px;
-  background-color: #444;
+:deep(a:not(.menu a)) {
+  @apply text-primary underline-offset-4 hover:underline;
 }
 </style>

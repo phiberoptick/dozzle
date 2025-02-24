@@ -1,51 +1,58 @@
 <template>
-  <div @mouseenter="onMouseEnter" @mouseleave="onMouseLeave" ref="trigger"><slot></slot></div>
-  <Teleport to="body">
-    <Transition name="fade">
-      <div v-show="show && (delayedShow || glopbalShow)" class="content" ref="content">
+  <slot></slot>
+  <teleport to="body">
+    <transition name="fade">
+      <div
+        v-show="show && (delayedShow || glopbalShow)"
+        class="border-base-content/20 bg-base-100 fixed z-50 rounded-sm border p-4 shadow-sm"
+        ref="content"
+      >
         <slot name="content"></slot>
       </div>
-    </Transition>
-  </Teleport>
+    </transition>
+  </teleport>
 </template>
 
 <script lang="ts" setup>
-import { globalShowPopup } from "@/composables/popup";
+import { globalShowPopup } from "@/composable/popup";
 
-let glopbalShow = globalShowPopup();
-let show = ref(glopbalShow.value);
-let delayedShow = refDebounced(show, 1000);
+const glopbalShow = globalShowPopup();
+const show = ref(glopbalShow.value);
+const delayedShow = refDebounced(show, 1000);
+const content = ref<HTMLElement>();
 
-let content: HTMLElement | null = $ref(null);
-let trigger: HTMLElement | null = $ref(null);
-
-function onMouseEnter(e: MouseEvent) {
+const onMouseEnter = (e: Event) => {
   show.value = true;
   glopbalShow.value = true;
-  if (e.target && content && e.target instanceof Element) {
+
+  if (content.value && e.target instanceof HTMLElement) {
     const { left, top, width } = e.target.getBoundingClientRect();
     const x = left + width + 10;
     const y = top;
 
-    content.style.left = `${x}px`;
-    content.style.top = `${y}px`;
+    content.value.style.left = `${x}px`;
+    content.value.style.top = `${y}px`;
   }
-}
+};
 
-function onMouseLeave() {
+const onMouseLeave = () => {
   show.value = false;
   glopbalShow.value = false;
-}
+};
+
+const el: Ref<HTMLElement> = useCurrentElement();
+useEventListener(() => el.value?.nextElementSibling, "mouseenter", onMouseEnter);
+useEventListener(() => el.value?.nextElementSibling, "mouseleave", onMouseLeave);
 </script>
 
 <style scoped>
-.content {
-  position: fixed;
-  z-index: 9999;
-  background: var(--scheme-main-ter);
-  border-radius: 0.5em;
-  padding: 1em;
-  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--border-color);
+.fade-enter-active,
+.fade-leave-active {
+  @apply transition-opacity;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  @apply opacity-0;
 }
 </style>

@@ -1,3 +1,19 @@
+@import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
+
+@plugin "daisyui" {
+  include: stat, button;
+  themes: light --default;
+}
+@plugin "daisyui/theme" {
+  name: "light";
+  default: true;
+  --depth: 0;
+  --noise: 0;
+  --radius-field: 2rem;
+  --color-primary: var(--vp-button-brand-bg);
+}
+
 /**
  * Customize default theme styling by overriding CSS variables:
  * https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/vars.css
@@ -144,14 +160,18 @@
 }
 
 .VPHomeHero .name {
-  @apply font-playfair font-light text-7xl;
+  @apply text-7xl font-light;
 }
 
 .VPNavBarTitle .title {
-  @apply font-playfair font-light text-3xl;
-  color: var(--bar-title-color);
+  @apply text-3xl font-light;
+  text-transform: uppercase;
 }
 
 .VPHero .container .image {
   max-width: 1200px;
+}
+
+.VPNavBar.home .container {
+  max-width: 100%;
 }

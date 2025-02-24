@@ -1,95 +1,67 @@
 <template>
-  <div class="scroll-progress" ref="root">
-    <svg width="100" height="100" viewBox="0 0 100 100" :class="{ indeterminate }">
-      <circle r="44" cx="50" cy="50" />
-    </svg>
-    <div class="is-overlay columns is-vcentered is-centered has-text-weight-light">
-      <template v-if="indeterminate">
-        <div class="column is-narrow is-paddingless is-size-2">&#8734;</div>
-      </template>
-      <template v-else>
-        <span class="column is-narrow is-paddingless is-size-2">
-          {{ Math.ceil(scrollProgress * 100) }}
-        </span>
-        <span class="column is-narrow is-paddingless"> % </span>
-      </template>
+  <transition name="fadeout">
+    <div class="inline-flex flex-col items-end gap-2" ref="root" v-show="!autoHide || show">
+      <div class="relative inline-block">
+        <svg width="100" height="100" viewBox="0 0 100 100" :class="{ indeterminate }">
+          <circle r="44" cx="50" cy="50" class="fill-base-300 stroke-primary" />
+        </svg>
+        <div class="absolute inset-0 flex items-center justify-center font-light">
+          <span class="text-4xl">
+            {{ Math.ceil(progress * 100) }}
+          </span>
+          <span> % </span>
+        </div>
+      </div>
+      <DistanceTime :date="date" class="text-sm whitespace-nowrap" />
     </div>
-  </div>
+  </transition>
 </template>
 
 <script lang="ts" setup>
-const { indeterminate = false, autoHide = false } = defineProps<{
+const {
+  indeterminate = false,
+  autoHide = false,
+  progress,
+  date = new Date(),
+} = defineProps<{
   indeterminate?: boolean;
   autoHide?: boolean;
+  progress: number;
+  date?: Date;
 }>();
 
-const scrollProgress = ref(0);
-const animation = ref({ cancel: () => {} });
-const root = ref<HTMLElement>();
-const store = useContainerStore();
-const { activeContainers } = storeToRefs(store);
-const scrollElement = ref<HTMLElement | Document>((root.value?.closest("[data-scrolling]") as HTMLElement) ?? document);
-const { y: scrollY } = useScroll(scrollElement as Ref<HTMLElement | Document>, { throttle: 100 });
+const show = autoResetRef(false, 2000);
 
-onMounted(() => {
-  watch(
-    activeContainers,
-    () => {
-      scrollElement.value = (root.value?.closest("[data-scrolling]") as HTMLElement) ?? document;
-    },
-    { immediate: true, flush: "post" }
-  );
-});
-
-watchPostEffect(() => {
-  const parent =
-    scrollElement.value === document
-      ? (scrollElement.value as Document).documentElement
-      : (scrollElement.value as HTMLElement);
-  scrollProgress.value = scrollY.value / (parent.scrollHeight - parent.clientHeight);
-  animation.value.cancel();
-  if (autoHide && root.value) {
-    animation.value = root.value.animate(
-      { opacity: [1, 0] },
-      {
-        duration: 500,
-        delay: 2000,
-        fill: "both",
-        easing: "ease-out",
-      }
-    );
-  }
-});
+watch(
+  () => progress,
+  () => {
+    if (autoHide) {
+      show.value = true;
+    }
+  },
+);
 </script>
-<style scoped lang="scss">
-.scroll-progress {
-  display: inline-block;
-  position: relative;
-  pointer-events: none;
+<style scoped>
+svg {
+  filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.2));
+  margin-top: 5px;
+  &.indeterminate {
+    animation: 2s linear infinite svg-animation;
 
-  svg {
-    filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.2));
-    margin-top: 5px;
-    &.indeterminate {
-      animation: 2s linear infinite svg-animation;
-
-      circle {
-        animation: 1.4s ease-in-out infinite both circle-animation;
-      }
-    }
     circle {
-      fill: var(--scheme-main-ter);
-      fill-opacity: 0.8;
-      transition: stroke-dashoffset 250ms ease-out;
-      transform: rotate(-90deg);
-      transform-origin: 50% 50%;
-      stroke: var(--primary-color);
-      stroke-dashoffset: calc(276.32px - v-bind(scrollProgress) * 276.32px);
-      stroke-dasharray: 276.32px 276.32px;
-      stroke-linecap: round;
-      stroke-width: 3;
-      will-change: stroke-dashoffset;
+      animation: 1.4s ease-in-out infinite both circle-animation;
     }
+  }
+  circle {
+    fill-opacity: 0.75;
+    transition: stroke-dashoffset 250ms ease-out;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    stroke-dashoffset: calc(276.32px - v-bind(progress) * 276.32px);
+    stroke-dasharray: 276.32px 276.32px;
+    stroke-linecap: round;
+    stroke-width: 3;
+    will-change: stroke-dashoffset;
   }
 }
 
@@ -118,5 +90,13 @@ watchPostEffect(() => {
     stroke-dashoffset: 275px;
     transform: rotate(360deg);
   }
+}
+
+.fadeout-leave-active {
+  @apply transition-opacity;
+}
+
+.fadeout-leave-to {
+  opacity: 0;
 }
 </style>

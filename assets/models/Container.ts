@@ -1,44 +1,109 @@
 import type { ContainerHealth, ContainerStat, ContainerState } from "@/types/Container";
-import type { UseThrottledRefHistoryReturn } from "@vueuse/core";
+import { useExponentialMovingAverage, useSimpleRefHistory } from "@/utils";
 import { Ref } from "vue";
 
-type Stat = Omit<ContainerStat, "id">;
+export type Stat = Omit<ContainerStat, "id">;
 
-const SWARM_ID_REGEX = /(\.[a-z0-9]{25})+$/i;
+const hosts = computed(() =>
+  config.hosts.reduce(
+    (acc, item) => {
+      acc[item.id] = item;
+      return acc;
+    },
+    {} as Record<string, { name: string; id: string }>,
+  ),
+);
+
+export class GroupedContainers {
+  constructor(
+    public readonly name: string,
+    public readonly containers: Container[],
+  ) {}
+}
 
 export class Container {
-  public stat: Ref<Stat>;
-  private readonly throttledStatHistory: UseThrottledRefHistoryReturn<Stat, Stat>;
-  public readonly swarmId: string | null = null;
-  public readonly isSwarm: boolean = false;
+  private _stat: Ref<Stat>;
+  private _name: string;
+  private readonly _statsHistory: Ref<Stat[]>;
+  private readonly movingAverageStat: Ref<Stat>;
 
   constructor(
     public readonly id: string,
     public readonly created: Date,
+    public startedAt: Date,
+    public finishedAt: Date,
     public readonly image: string,
-    public readonly name: string,
+    name: string,
     public readonly command: string,
-    public status: string,
+    public readonly host: string,
+    public readonly labels = {} as Record<string, string>,
     public state: ContainerState,
-    public health?: ContainerHealth
+    stats: Stat[],
+    public readonly group?: string,
+    public health?: ContainerHealth,
   ) {
-    this.stat = ref({ cpu: 0, memory: 0, memoryUsage: 0 });
-    this.throttledStatHistory = useThrottledRefHistory(this.stat, { capacity: 300, deep: true, throttle: 1000 });
+    this._stat = ref(stats.at(-1) || ({ cpu: 0, memory: 0, memoryUsage: 0 } as Stat));
+    const { history } = useSimpleRefHistory(this._stat, { capacity: 300, deep: true, initial: stats });
+    this._statsHistory = history;
+    this.movingAverageStat = useExponentialMovingAverage(this._stat, 0.2);
 
-    const match = name.match(SWARM_ID_REGEX);
+    this._name = name;
+  }
 
-    if (match) {
-      this.swarmId = match[1];
-      this.name = name.replace(`${this.swarmId}`, "");
-      this.isSwarm = true;
+  get statsHistory() {
+    return unref(this._statsHistory);
+  }
+
+  get movingAverage() {
+    return unref(this.movingAverageStat);
+  }
+
+  get stat() {
+    return unref(this._stat);
+  }
+
+  get hostLabel() {
+    return hosts.value[this.host]?.name;
+  }
+
+  get storageKey() {
+    return `${stripVersion(this.image)}:${this.command}`;
+  }
+
+  get namespace() {
+    return this.labels["com.docker.stack.namespace"] || this.labels["com.docker.compose.project"];
+  }
+
+  get customGroup() {
+    return this.group;
+  }
+
+  set name(name: string) {
+    this._name = name;
+  }
+
+  get name() {
+    return this.isSwarm
+      ? this.labels["com.docker.swarm.task.name"]
+          .replace(`.${this.labels["com.docker.swarm.task.id"]}`, "")
+          .replace(`.${this.labels["com.docker.swarm.node.id"]}`, "")
+      : this._name;
+  }
+
+  get swarmId() {
+    return this.labels["com.docker.swarm.task.name"].replace(this.name + ".", "");
+  }
+
+  get isSwarm() {
+    return Boolean(this.labels["com.docker.swarm.service.id"]);
+  }
+
+  public updateStat(stat: Stat) {
+    if (isRef(this._stat)) {
+      this._stat.value = stat;
+    } else {
+      // @ts-ignore
+      this._stat = stat;
     }
-  }
-
-  public getStatHistory() {
-    return unref(this.throttledStatHistory.history);
-  }
-
-  public getLastStat() {
-    return unref(this.throttledStatHistory.last);
   }
 }

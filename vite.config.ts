@@ -1,15 +1,18 @@
-import path from "path";
+import path from "node:path";
 import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
+import Vue from "@vitejs/plugin-vue";
+import VueMacros from "unplugin-vue-macros/vite";
 import Icons from "unplugin-icons/vite";
 import Components from "unplugin-vue-components/vite";
 import AutoImport from "unplugin-auto-import/vite";
 import IconsResolver from "unplugin-icons/resolver";
-import Pages from "vite-plugin-pages";
+import VueRouter from "unplugin-vue-router/vite";
 import Layouts from "vite-plugin-vue-layouts";
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
-import basicSsl from '@vitejs/plugin-basic-ssl'
-
+import { compression } from "vite-plugin-compression2";
+import { VueRouterAutoImports } from "unplugin-vue-router";
+import svgLoader from "vite-svg-loader";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(() => ({
   resolve: {
@@ -17,30 +20,33 @@ export default defineConfig(() => ({
       "@/": `${path.resolve(__dirname, "assets")}/`,
     },
   },
-  experimental: {
-    renderBuiltUrl(filename: string, { type }: { type: "public" | "asset" }) {
-      if (type === "asset") {
-        return `{{ .Base }}/${filename}`;
-      }
-      return filename;
+  build: {
+    manifest: true,
+    rollupOptions: {
+      input: "assets/main.ts",
     },
+    modulePreload: {
+      polyfill: false,
+    },
+    target: "esnext",
   },
   plugins: [
-    vue({
-      reactivityTransform: true,
-      template: {
-        compilerOptions: {
-          whitespace: "preserve",
-        },
+    VueRouter({
+      routesFolder: {
+        src: "./assets/pages",
+      },
+      dts: "./assets/typed-router.d.ts",
+      importMode: "sync",
+    }),
+    VueMacros({
+      plugins: {
+        vue: Vue(),
       },
     }),
     Icons({
       autoInstall: true,
     }),
-    Pages({
-      dirs: "assets/pages",
-      importMode: "sync",
-    }),
+
     Layouts({
       layoutsDirs: "assets/layouts",
     }),
@@ -55,9 +61,9 @@ export default defineConfig(() => ({
       dts: "assets/components.d.ts",
     }),
     AutoImport({
-      imports: ["vue", "vue-router", "vue-i18n", "vue/macros", "pinia", "@vueuse/head", "@vueuse/core"],
+      imports: ["vue", VueRouterAutoImports, "vue-i18n", "pinia", "@vueuse/head", "@vueuse/core"],
       dts: "assets/auto-imports.d.ts",
-      dirs: ["assets/composables", "assets/stores", "assets/utils"],
+      dirs: ["assets/composable", "assets/stores", "assets/utils"],
       vueTemplate: true,
     }),
     VueI18nPlugin({
@@ -66,17 +72,11 @@ export default defineConfig(() => ({
       strictMessage: false,
       include: [path.resolve(__dirname, "locales/**")],
     }),
-    basicSsl()
+    compression({ algorithm: "brotliCompress", exclude: [/\.(html)$/] }),
+    svgLoader({}),
+    tailwindcss(),
   ],
-  server: {
-    proxy: {
-      "/api": {
-        target: {
-          host: "127.0.0.1",
-          port: 3100,
-        },
-        changeOrigin: false,
-      },
-    },
+  test: {
+    include: ["assets/**/*.spec.ts"],
   },
 }));

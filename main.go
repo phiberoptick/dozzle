@@ -4,195 +4,219 @@ import (
 	"context"
 	"embed"
 	"io/fs"
+
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
+	"path/filepath"
 	"syscall"
 	"time"
 
-	"github.com/alexflint/go-arg"
-	"github.com/amir20/dozzle/analytics"
-	"github.com/amir20/dozzle/docker"
-	"github.com/amir20/dozzle/healthcheck"
-	"github.com/amir20/dozzle/web"
-
-	log "github.com/sirupsen/logrus"
+	"github.com/amir20/dozzle/internal/agent"
+	"github.com/amir20/dozzle/internal/auth"
+	"github.com/amir20/dozzle/internal/docker"
+	"github.com/amir20/dozzle/internal/k8s"
+	"github.com/amir20/dozzle/internal/support/cli"
+	docker_support "github.com/amir20/dozzle/internal/support/docker"
+	k8s_support "github.com/amir20/dozzle/internal/support/k8s"
+	"github.com/amir20/dozzle/internal/web"
+	"github.com/rs/zerolog/log"
 )
 
-var (
-	version = "head"
-)
-
-type DockerSecret struct {
-	Value string
-}
-
-func (s *DockerSecret) UnmarshalText(b []byte) error {
-	v, err := os.ReadFile(string(b))
-	s.Value = strings.Trim(string(v), "\r\n")
-	return err
-}
-
-type args struct {
-	Addr                 string              `arg:"env:DOZZLE_ADDR" default:":8080" help:"sets host:port to bind for server. This is rarely needed inside a docker container."`
-	Base                 string              `arg:"env:DOZZLE_BASE" default:"/" help:"sets the base for http router."`
-	Hostname             string              `arg:"env:DOZZLE_HOSTNAME" help:"sets the hostname for display. This is useful with multiple Dozzle instances."`
-	Level                string              `arg:"env:DOZZLE_LEVEL" default:"info" help:"set Dozzle log level. Use debug for more logging."`
-	Username             string              `arg:"env:DOZZLE_USERNAME" help:"sets the username for auth."`
-	Password             string              `arg:"env:DOZZLE_PASSWORD" help:"sets password for auth"`
-	UsernameFile         *DockerSecret       `arg:"env:DOZZLE_USERNAME_FILE" help:"sets the secret path read username for auth."`
-	PasswordFile         *DockerSecret       `arg:"env:DOZZLE_PASSWORD_FILE" help:"sets the secret path read password for auth"`
-	NoAnalytics          bool                `arg:"--no-analytics,env:DOZZLE_NO_ANALYTICS" help:"disables anonymous analytics"`
-	WaitForDockerSeconds int                 `arg:"--wait-for-docker-seconds,env:DOZZLE_WAIT_FOR_DOCKER_SECONDS" help:"wait for docker to be available for at most this many seconds before starting the server."`
-	FilterStrings        []string            `arg:"env:DOZZLE_FILTER,--filter,separate" help:"filters docker containers using Docker syntax."`
-	Filter               map[string][]string `arg:"-"`
-	Healthcheck          *HealthcheckCmd     `arg:"subcommand:healthcheck" help:"checks if the server is running."`
-	RemoteHost           []string            `arg:"env:DOZZLE_REMOTE_HOST,--remote-host,separate" help:"list of hosts to connect remotely"`
-}
-
-type HealthcheckCmd struct {
-}
-
-func (args) Version() string {
-	return version
-}
-
-//go:embed dist
+//go:embed all:dist
 var content embed.FS
 
+//go:embed shared_cert.pem shared_key.pem
+var certs embed.FS
+
+//go:generate protoc --go_out=. --go-grpc_out=. --proto_path=./protos ./protos/rpc.proto ./protos/types.proto
 func main() {
-	var args args
-	var err error
-	parser := arg.MustParse(&args)
-	args.Filter = make(map[string][]string)
-
-	for _, filter := range args.FilterStrings {
-		pos := strings.Index(filter, "=")
-		if pos == -1 {
-			parser.Fail("each filter should be of the form key=value")
+	cli.ValidateEnvVars(cli.Args{}, cli.AgentCmd{})
+	args, subcommand := cli.ParseArgs()
+	if subcommand != nil {
+		runnable, ok := subcommand.(cli.Runnable)
+		if !ok {
+			log.Fatal().Msg("Invalid command")
 		}
-		key := filter[:pos]
-		val := filter[pos+1:]
-		args.Filter[key] = append(args.Filter[key], val)
+		err := runnable.Run(args, certs)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to run command")
+		}
+
+		os.Exit(0)
 	}
 
-	level, _ := log.ParseLevel(args.Level)
-	log.SetLevel(level)
-
-	log.SetFormatter(&log.TextFormatter{
-		DisableTimestamp:       true,
-		DisableLevelTruncation: true,
-	})
-
-	if args.Healthcheck != nil {
-		if err := healthcheck.HttpRequest(args.Addr, args.Base); err != nil {
-			log.Fatal(err)
-		}
+	if args.AuthProvider != "none" && args.AuthProvider != "forward-proxy" && args.AuthProvider != "simple" {
+		log.Fatal().Str("provider", args.AuthProvider).Msg("Invalid auth provider")
 	}
 
-	log.Infof("Dozzle version %s", version)
+	log.Info().Msgf("Dozzle version %s", args.Version())
 
-	dockerClient := docker.NewClientWithFilters(args.Filter)
-	for i := 1; ; i++ {
-		_, err := dockerClient.ListContainers()
-		if err == nil {
-			break
-		} else if args.WaitForDockerSeconds <= 0 {
-			log.Fatalf("Could not connect to Docker Engine: %v", err)
+	var hostService web.HostService
+	if args.Mode == "server" {
+
+		multiHostService := cli.CreateMultiHostService(certs, args)
+		if multiHostService.TotalClients() == 0 {
+			log.Fatal().Msg("Could not connect to any Docker Engine")
 		} else {
-			log.Infof("Waiting for Docker Engine (attempt %d): %s", i, err)
-			time.Sleep(5 * time.Second)
-			args.WaitForDockerSeconds -= 5
+			log.Info().Int("clients", multiHostService.TotalClients()).Msg("Connected to Docker")
 		}
-	}
-
-	clients := make(map[string]docker.Client)
-	clients["localhost"] = dockerClient
-
-	for _, host := range args.RemoteHost {
-		log.Infof("Creating client for %s", host)
-		client := docker.NewClientWithTlsAndFilter(args.Filter, host)
-		clients[host] = client
-	}
-
-	if args.Username == "" && args.UsernameFile != nil {
-		args.Username = args.UsernameFile.Value
-	}
-
-	if args.Password == "" && args.PasswordFile != nil {
-		args.Password = args.PasswordFile.Value
-	}
-
-	if args.Username != "" || args.Password != "" {
-		if args.Username == "" || args.Password == "" {
-			log.Fatalf("Username AND password are required for authentication")
+		hostService = multiHostService
+	} else if args.Mode == "swarm" {
+		localClient, err := docker.NewLocalClient("")
+		if err != nil {
+			log.Fatal().Err(err).Msg("Could not create docker client")
 		}
+		certs, err := cli.ReadCertificates(certs)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Could not read certificates")
+		}
+		agentManager := docker_support.NewRetriableClientManager(args.RemoteAgent, args.Timeout, certs)
+		manager := docker_support.NewSwarmClientManager(localClient, certs, args.Timeout, agentManager, args.Filter)
+		hostService = docker_support.NewMultiHostService(manager, args.Timeout)
+		log.Info().Msg("Starting in swarm mode")
+		listener, err := net.Listen("tcp", ":7007")
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to listen")
+		}
+		server, err := agent.NewServer(localClient, certs, args.Version(), args.Filter)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to create agent")
+		}
+		go cli.StartEvent(args, "swarm", localClient, "")
+		go func() {
+			log.Info().Msgf("Dozzle agent version in swarm mode %s", args.Version())
+			if err := server.Serve(listener); err != nil {
+				log.Error().Err(err).Msg("failed to serve")
+			}
+		}()
+	} else if args.Mode == "k8s" {
+		localClient, err := k8s.NewK8sClient(args.Namespace)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Could not create k8s client")
+		}
+
+		clusterService, err := k8s_support.NewK8sClusterService(localClient, args.Timeout)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Could not create k8s cluster service")
+		}
+
+		go cli.StartEvent(args, "k8s", localClient, "")
+		hostService = clusterService
+	} else {
+		log.Fatal().Str("mode", args.Mode).Msg("Invalid mode")
+	}
+
+	srv := createServer(args, hostService)
+	go func() {
+		log.Info().Msgf("Accepting connections on %s", args.Addr)
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatal().Err(err).Msg("failed to listen")
+		}
+	}()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	<-ctx.Done()
+	stop()
+	log.Info().Msg("shutting down gracefully, press Ctrl+C again to force")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error().Err(err).Msg("failed to shut down")
+	}
+	log.Debug().Msg("shut down complete")
+}
+
+func createServer(args cli.Args, hostService web.HostService) *http.Server {
+	_, dev := os.LookupEnv("DEV")
+
+	var provider web.AuthProvider = web.NONE
+	var authorizer web.Authorizer
+	if args.AuthProvider == "forward-proxy" {
+		log.Debug().Msg("Using forward proxy authentication")
+		provider = web.FORWARD_PROXY
+		authorizer = auth.NewForwardProxyAuth(args.AuthHeaderUser, args.AuthHeaderEmail, args.AuthHeaderName, args.AuthHeaderFilter)
+	} else if args.AuthProvider == "simple" {
+		log.Debug().Msg("Using simple authentication")
+		provider = web.SIMPLE
+
+		path, err := filepath.Abs("./data/users.yml")
+		if err != nil {
+			log.Fatal().Err(err).Msg("Could not get absolute path")
+		}
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			log.Fatal().Msg("users.yml file does not exist")
+		}
+
+		log.Debug().Str("path", path).Msg("Reading users.yml file")
+
+		db, err := auth.ReadUsersFromFile(path)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Could not read users.yml file")
+		}
+
+		log.Debug().Int("users", len(db.Users)).Msg("Loaded users")
+		ttl := time.Duration(0)
+		if args.AuthTTL != "session" {
+			ttl, err = time.ParseDuration(args.AuthTTL)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Could not parse auth ttl")
+			}
+		}
+		authorizer = auth.NewSimpleAuth(db, ttl)
+	}
+
+	authTTL := time.Duration(0)
+
+	if args.AuthTTL != "session" {
+		ttl, err := time.ParseDuration(args.AuthTTL)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Could not parse auth ttl")
+		}
+		authTTL = ttl
 	}
 
 	config := web.Config{
 		Addr:        args.Addr,
 		Base:        args.Base,
-		Version:     version,
-		Username:    args.Username,
-		Password:    args.Password,
+		Version:     args.Version(),
 		Hostname:    args.Hostname,
 		NoAnalytics: args.NoAnalytics,
+		Dev:         dev,
+		Authorization: web.Authorization{
+			Provider:   provider,
+			Authorizer: authorizer,
+			TTL:        authTTL,
+		},
+		EnableActions: args.EnableActions,
+		Labels:        args.Filter,
 	}
 
 	assets, err := fs.Sub(content, "dist")
 	if err != nil {
-		log.Fatalf("Could not open embedded dist folder: %v", err)
+		log.Fatal().Err(err).Msg("Could not get sub filesystem")
 	}
 
 	if _, ok := os.LookupEnv("LIVE_FS"); ok {
-		log.Info("Using live filesystem at ./dist")
-		assets = os.DirFS("./dist")
-	}
-
-	srv := web.CreateServer(clients, assets, config)
-	go doStartEvent(args)
-	go func() {
-		log.Infof("Accepting connections on %s", srv.Addr)
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatal(err)
+		if dev {
+			log.Info().Msg("Using live filesystem at ./public")
+			assets = os.DirFS("./public")
+		} else {
+			log.Info().Msg("Using live filesystem at ./dist")
+			assets = os.DirFS("./dist")
 		}
-	}()
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	signal.Notify(c, syscall.SIGTERM)
-	<-c
-	log.Info("Shutting down...")
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	srv.Shutdown(ctx)
-	os.Exit(0)
-}
-
-func doStartEvent(arg args) {
-	if arg.NoAnalytics {
-		log.Debug("Analytics disabled.")
-		return
-	}
-	host, err := os.Hostname()
-	if err != nil {
-		log.Debug(err)
-		return
 	}
 
-	event := analytics.StartEvent{
-		ClientId:         host,
-		Version:          version,
-		FilterLength:     len(arg.Filter),
-		CustomAddress:    arg.Addr != ":8080",
-		CustomBase:       arg.Base != "/",
-		RemoteHostLength: len(arg.RemoteHost),
-		Protected:        arg.Username != "",
-		HasHostname:      arg.Hostname != "",
+	if !dev {
+		if _, err := assets.Open(".vite/manifest.json"); err != nil {
+			log.Fatal().Msg("manifest.json not found")
+		}
+		if _, err := assets.Open("index.html"); err != nil {
+			log.Fatal().Msg("index.html not found")
+		}
 	}
 
-	if err := analytics.SendStartEvent(event); err != nil {
-		log.Debug(err)
-	}
+	return web.CreateServer(hostService, assets, config)
 }

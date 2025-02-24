@@ -1,13 +1,13 @@
 <template>
-  <div class="has-text-centered is-relative host" @mouseenter="mouseOver = true" @mouseleave="mouseOver = false">
-    <div class="has-border has-boxshadow">
-      <stat-sparkline :data="data" @selected-point="onSelectedPoint"></stat-sparkline>
+  <div class="hover:text-secondary relative" @mouseenter="mouseOver = true" @mouseleave="mouseOver = false">
+    <div class="border-primary hidden overflow-hidden rounded-xs border px-px pt-1 pb-px md:flex">
+      <StatSparkline :data="data" @selected-point="onSelectedPoint" />
     </div>
-    <div class="has-background-body-color is-top-left">
-      <span class="has-text-weight-light">{{ label }}</span>
-      <span class="has-text-weight-bold">
-        {{ mouseOver ? selectedPoint?.value ?? selectedPoint?.y ?? statValue : statValue }}
-      </span>
+    <div class="bg-base-200 inline-flex gap-1 rounded-sm p-px text-xs md:absolute md:-top-2 md:-left-0.5">
+      <div class="font-light uppercase">{{ label }}</div>
+      <div class="font-bold select-none">
+        {{ mouseOver ? (selectedPoint?.value ?? selectedPoint?.y ?? statValue) : statValue }}
+      </div>
     </div>
   </div>
 </template>
@@ -23,28 +23,3 @@ function onSelectedPoint(point: Point<unknown>) {
 
 let mouseOver = $ref(false);
 </script>
-
-<style lang="scss" scoped>
-.has-border {
-  border: 1px solid var(--primary-color);
-  border-radius: 3px;
-  padding: 1px 1px 0 1px;
-  display: flex;
-  overflow: hidden;
-  padding-top: 0.25em;
-}
-
-.has-background-body-color {
-  background-color: var(--body-background-color);
-}
-
-.host:hover span {
-  color: var(--secondary-color);
-}
-
-.is-top-left {
-  position: absolute;
-  top: 0;
-  left: 0.75em;
-}
-</style>
