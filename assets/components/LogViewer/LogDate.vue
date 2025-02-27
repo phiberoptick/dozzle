@@ -1,19 +1,10 @@
 <template>
-  <date-time :date="date" class="date"></date-time>
+  <Tag size="small" class="items-start!">
+    <DateTime :date="date" class="text-blue whitespace-nowrap" />
+  </Tag>
 </template>
 <script lang="ts" setup>
 defineProps<{
   date: Date;
 }>();
 </script>
-
-<style lang="scss" scoped>
-.date {
-  padding-left: 5px;
-  padding-right: 5px;
-  border-radius: 3px;
-  white-space: nowrap;
-  background-color: var(--scheme-main-ter);
-  color: #258ccd;
-}
-</style>

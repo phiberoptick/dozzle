@@ -1,50 +1,54 @@
 <template>
-  <div class="hero is-halfheight">
-    <div class="hero-body">
-      <div class="container">
-        <section class="columns is-centered section">
-          <div class="column is-4">
-            <div class="card">
-              <div class="card-content">
-                <form action="" method="post" @submit.prevent="onLogin" ref="form">
-                  <div class="field">
-                    <label class="label">{{ $t("label.username") }}</label>
-                    <div class="control">
-                      <input
-                        class="input"
-                        type="text"
-                        name="username"
-                        autocomplete="username"
-                        v-model="username"
-                        autofocus
-                      />
-                    </div>
-                  </div>
+  <div class="card bg-base-100 w-96 shrink-0 shadow-2xl">
+    <div class="card-body">
+      <form action="" method="post" @submit.prevent="onLogin" ref="form" class="flex flex-col gap-8">
+        <label class="form-control w-full">
+          <label
+            class="input floating-label input-bordered has-[:focus]:input-primary flex items-center gap-2 border-2"
+            :class="{ 'input-error': error }"
+          >
+            <span class="ml-5">{{ $t("label.username") }}</span>
+            <mdi:account class="has-[+:focus]:text-primary" :class="{ 'text-error': error }" />
+            <input
+              type="text"
+              :class="{ 'text-error': error }"
+              :placeholder="$t('label.username')"
+              name="username"
+              autocomplete="username"
+              autofocus
+              required
+              :disabled="loading"
+            />
+          </label>
+          <label class="label" v-if="error">
+            <span class="label-text-alt text-error">
+              {{ $t("error.invalid-auth") }}
+            </span>
+          </label>
+        </label>
+        <label class="form-control w-full">
+          <label
+            class="input floating-label input-bordered has-[:focus]:input-primary flex items-center gap-2 border-2"
+          >
+            <span class="ml-5">{{ $t("label.password") }}</span>
+            <mdi:key class="has-[+:focus]:text-primary" />
+            <input
+              type="password"
+              :placeholder="$t('label.password')"
+              name="password"
+              autocomplete="current-password"
+              autofocus
+              required
+              :disabled="loading"
+            />
+          </label>
+        </label>
 
-                  <div class="field">
-                    <label class="label">{{ $t("label.password") }}</label>
-                    <div class="control">
-                      <input
-                        class="input"
-                        type="password"
-                        name="password"
-                        autocomplete="current-password"
-                        v-model="password"
-                      />
-                    </div>
-                    <p class="help is-danger" v-if="error">{{ $t("error.invalid-auth") }}</p>
-                  </div>
-                  <div class="field is-grouped is-grouped-centered mt-5">
-                    <p class="control">
-                      <button class="button is-primary" type="submit">{{ $t("button.login") }}</button>
-                    </p>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
+        <button class="btn btn-primary uppercase" type="submit" :disabled="loading">
+          <span class="loading loading-spinner" v-if="loading"></span>
+          {{ $t("button.login") }}
+        </button>
+      </form>
     </div>
   </div>
 </template>
@@ -54,23 +58,29 @@ const { t } = useI18n();
 
 setTitle(t("title.login"));
 
-let error = $ref(false);
-let username = $ref("");
-let password = $ref("");
-let form: HTMLFormElement | undefined = $ref();
+const error = ref(false);
+const loading = ref(false);
+const form = ref<HTMLFormElement>();
+const params = new URLSearchParams(window.location.search);
 
 async function onLogin() {
-  const response = await fetch(`${config.base}/api/validateCredentials`, {
-    body: new FormData(form),
-    method: "post",
+  loading.value = true;
+  const response = await fetch(withBase("/api/token"), {
+    body: new FormData(form.value),
+    method: "POST",
   });
 
   if (response.status == 200) {
-    error = false;
-    window.location.href = `${config.base}/`;
+    error.value = false;
+    if (params.has("redirectUrl")) {
+      window.location.href = withBase(params.get("redirectUrl")!);
+    } else {
+      window.location.href = withBase("/");
+    }
   } else {
-    error = true;
+    error.value = true;
   }
+  loading.value = false;
 }
 </script>
 <route lang="yaml">

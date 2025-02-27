@@ -2,48 +2,115 @@ toolbar:
   clear: Очистить
   download: Скачать
   search: Поиск
+  show: Показать только {std}
+  show-all: Показать все потоки
+  stop: Stop
+  start: Start
+  restart: Restart
+  show-hostname: Показать имя хоста
+  show-container-name: Показать имя контейнера
 label:
   containers: Контейнеры
-  total-containers: Всего Контейнеров
-  running: Запущенные
-  total-cpu-usage: Использование процессора
-  total-mem-usage: Использование памяти
-  dozzle-version: Версия Dozzle
-  all: Все
+  container: No containers | 1 container | {count} containers
+  service: No services | 1 service | {count} services
+  services: Services
+  running-containers: Запущенные контейнеры
+  all-containers: Все контейнеры
+  host: Хост
+  hosts: Хосты
   password: Пароль
   username: Имя пользователя
+  container-name: Имя контейнера
+  status: Статус
+  created: Создан
+  avg-cpu: средний процессор (%)
+  avg-mem: средняя память (%)
+  pinned: Pinned
+  per-page: Rows per page
+  host-menu: Хосты и Контейнеры
+  swarm-menu: Сервисы и Стеки
+  group-menu: Пользовательские Группы
 tooltip:
   search: Поиск контейнеров (⌘ + k, ⌃k)
   pin-column: Закрепить столбец
+  merge-services: Merge all services into one view
+  merge-containers: Merge all containers into one view
+  merge-hosts: Merge all containers on this host into one view
 error:
   page-not-found: Эта страница не доступна.
   invalid-auth: Имя пользователя или пароль неверны.
   logs-skipped: Пропущено {total} записей
+  container-not-found: Контейнер не найден.
+  events-stream:
+    title: Неожиданная ошибка
+    message: >-
+      Dozzle UI не смог подключиться к API. Пожалуйста, проверьте настройки сети. Если вы используете обратный прокси, убедитесь, что он настроен правильно.
+  events-timeout:
+    title: Что-то не так
+    message: >-
+      Dozzle UI превысил время ожидания при подключении к API. Пожалуйста, проверьте сетевое подключение и повторите попытку.
+alert:
+  redirected:
+    title: Перенаправлен на новый контейнер
+    message: Dozzle автоматически перенаправил вас на новый контейнер {containerId}.
+  similar-container-found:
+    title: Найден похожий контейнер
+    message: >-
+      Dozzle нашел похожий контейнер {containerId}, который работает на том же хосте. Хотите переключиться на него?
 title:
   page-not-found: Страница не найдена
   login: Требуется авторизация
+  dashboard: 1 контейнер | {count} контейнеров
   settings: Настройки
 button:
   logout: Выйти
   login: Войти
+  settings: Настройки
+  cancel: Cancel
+  redirect: Redirect
 placeholder:
   search-containers: Поиск контейнеров (⌘ + k, ⌃k)
+  search: Поиск
 settings:
   display: Вид
+  locale: Язык
   small-scrollbars: Уменьшенная полоса прокрутки
   show-timesamps: Показывать временные метки
   soft-wrap: Плавный перенос текста
-  12-24-format: >-
-    Формат времени. По умолчанию, Dozzle будет использовать локализацию вашего браузера.
+  datetime-format: Формат даты и времени
   font-size: Размер шрифта
   color-scheme: Цветовая схема
   options: Опции
   show-stopped-containers: Показывать остановленные контейнеры
   about: Информация
-  search: >-
-    Включить поиск с помощью Dozzle, используя <code>command+f</code> или
-    <code>ctrl+f</code>
+  search: Включить поиск с помощью Dozzle, используя
   using-version: Вы используете версию Dozzle {version}.
   update-available: >-
-    Доступна новая версия! Обновить до <a :href="{href}" class="next-release"
-    target="_blank" rel="noreferrer noopener">{nextVersion}</a>.
+    Доступна новая версия! Обновить до <a href="{href}" target="_blank" rel="noreferrer noopener">{nextVersion}</a>.
+  show-std: Показывать метки stdout и stderr
+  automatic-redirect: Автоматическое перенаправление на новые контейнеры с тем же именем.
+  compact: Компактный режим
+  log:
+    preview: Это предварительный просмотр логов
+    warning: Так выглядит лог предупреждения
+    complex: Это сложная запись лога в формате json
+    simple: Это очень длинное сообщение, которое по умолчанию переносится. Отключение мягкого переноса отключит это. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    multi-line-error:
+      start-line: Это многострочное сообщение об ошибке
+      middle-line: со второй строкой
+      end-line: и наконец третьей строкой.
+releases:
+  features: one new feature | {count} features
+  bugFixes: one bug fix | {count} fixes
+  breaking: one breaking change | {count} breaking changes
+  three_parts: "{first}, {second} and {third}"
+  two_parts: "{first} with {second}"
+  latest: Latest
+  no_releases: You have the latest version
+log_actions:
+  copy_log: Copy log
+  jump_to_context: Jump to context
+toasts:
+  copied:
+    title: Copied
+    message: Log copied to clipboard

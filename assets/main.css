@@ -1,0 +1,128 @@
+@import "tailwindcss";
+@import "splitpanes/dist/splitpanes.css" layer(base);
+@plugin "daisyui";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-green: oklch(69% 0.119722 188.479048);
+  --color-red: oklch(64% 0.218 28.85);
+  --color-purple: oklch(51.49% 0.215 321.03);
+  --color-blue: oklch(65% 0.171 249.5);
+  --color-orange: oklch(70% 0.186 48.13);
+}
+
+@plugin "daisyui/theme" {
+  name: "dark";
+  default: false;
+  prefersdark: false;
+  color-scheme: dark;
+
+  --color-base-100: oklch(25% 0 0);
+  --color-base-200: oklch(18% 0 0);
+  --color-base-300: oklch(11% 0 0);
+  --color-base-content: oklch(89.23% 0 0);
+  --color-primary: oklch(70.96% 0.143 176.65);
+  --color-primary-content: oklch(98% 0.01 240);
+  --color-secondary: oklch(81.38% 0.1448 90.1243);
+  --color-secondary-content: oklch(98% 0.01 200);
+
+  --color-neutral: oklch(50% 0.05 240);
+  --color-neutral-content: oklch(98% 0.01 240);
+
+  --color-info: var(--color-blue);
+  --color-info-content: oklch(98% 0.01 220);
+
+  --color-success: var(--color-green);
+  --color-success-content: oklch(98% 0.01 140);
+
+  --color-warning: var(--color-orange);
+  --color-success-content: oklch(98% 0.01 140);
+
+  --color-error: var(--color-red);
+  --color-error-content: oklch(98% 0.01 30);
+
+  --radius-selector: 1rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+
+  --border: 1px;
+
+  --depth: 0;
+  --noise: 1;
+}
+
+@plugin "daisyui/theme" {
+  name: "light";
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(97% 0 0);
+  --color-base-300: oklch(90% 0 0);
+  --color-base-content: oklch(33% 0 0);
+  --color-primary: oklch(79.96% 0.143 176.65);
+  --color-primary-content: oklch(98% 0.01 240);
+  --color-secondary: oklch(82.67% 0.15380739746702807 77.82);
+  --color-secondary-content: oklch(98% 0.01 200);
+
+  --color-neutral: oklch(50% 0.05 240);
+  --color-neutral-content: oklch(98% 0.01 240);
+
+  --color-info: var(--color-blue);
+  --color-info-content: oklch(98% 0.01 220);
+
+  --color-success: var(--color-green);
+  --color-success-content: oklch(98% 0.01 140);
+
+  --color-warning: var(--color-orange);
+  --color-success-content: oklch(98% 0.01 140);
+
+  --color-error: var(--color-red);
+  --color-error-content: oklch(98% 0.01 30);
+
+  --radius-selector: 1rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+
+  --border: 1px;
+
+  --depth: 0;
+  --noise: 1;
+}
+
+@utility input {
+  @apply outline-hidden!;
+  &.input-ghost {
+    @apply focus:border-transparent;
+  }
+}
+
+@utility btn {
+  &:not(.btn-primary):not(.btn-secondary) {
+    @apply hover:bg-base-100;
+  }
+}
+
+@utility menu-active {
+  &,
+  &:active {
+    --menu-active-bg: var(--color-primary);
+  }
+}
+
+@utility animate-bounce-fast {
+  animation: bounce 0.5s 2 both;
+}
+
+@utility link-primary {
+  @apply underline-offset-4 hover:underline;
+}
+
+@layer base {
+  @media screen and (max-device-width: 480px) {
+    body {
+      -webkit-text-size-adjust: 100%;
+    }
+  }
+}

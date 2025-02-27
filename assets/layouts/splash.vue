@@ -1,9 +1,7 @@
 <template>
-  <main>
-    <router-view></router-view>
-  </main>
+  <div class="hero min-h-dvh">
+    <div class="hero-content">
+      <router-view></router-view>
+    </div>
+  </div>
 </template>
-
-<script lang="ts" setup></script>
-
-<style scoped lang="scss"></style>
